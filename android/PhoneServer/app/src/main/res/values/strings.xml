@@ -2,5 +2,14 @@
     <string name="app_name">PhoneServer</string>
 
     <string name="hello_world">Hello world!</string>
+    <string name="send_btn">Send</string>
+    <string name="refresh_btn">Refresh</string>
     <string name="action_settings">Settings</string>
+
+    <string name="approach_label">My Approachability:</string>
+    <string name="location_label">My Location:</string>
+
+    <string name="field_waiting_for_data">Waiting&#8230;</string>
+    <string name="field_no_data">No Data</string>
+    <string name="field_error">Error</string>
 </resources>

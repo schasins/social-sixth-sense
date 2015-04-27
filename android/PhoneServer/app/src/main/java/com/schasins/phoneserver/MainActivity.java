@@ -8,6 +8,8 @@ import android.support.v7.app.ActionBarActivity;
 import android.os.Bundle;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.View;
+import android.widget.TextView;
 
 import org.apache.http.HttpResponse;
 import org.apache.http.NameValuePair;
@@ -39,7 +41,22 @@ public class MainActivity extends ActionBarActivity {
         // Or use LocationManager.GPS_PROVIDER
         locationManager = setUpLocationManager();
 
-        postData();
+        setupUI();
+    }
+
+    private void setupUI() {
+        findViewById(R.id.send_btn).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                postData();
+            }
+        });
+        findViewById(R.id.refresh_btn).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                refreshData();
+            }
+        });
     }
 
     private LocationManager setUpLocationManager(){
@@ -83,6 +100,33 @@ public class MainActivity extends ActionBarActivity {
         return super.onOptionsItemSelected(item);
     }
 
+    public void refreshData() {
+        String approachString = calculateApproachString();
+        String locationString = calculateLocationString();
+        if (approachString.isEmpty()) {
+            locationString = getString(R.string.field_error);
+        }
+        if (locationString.isEmpty()) {
+            locationString = getString(R.string.field_error);
+        }
+        ((TextView) findViewById(R.id.approach_field)).setText(approachString);
+        ((TextView) findViewById(R.id.location_field)).setText(locationString);
+    }
+
+    private String calculateApproachString() {
+        //TODO: get value from Arduino
+        return "0.5";
+    }
+
+    private String calculateLocationString() {
+        Location lastKnownLocation = locationManager.getLastKnownLocation(locationProvider);
+        String lastKnownLocationStr = "";
+        if (lastKnownLocation != null) {
+            lastKnownLocationStr = lastKnownLocation.toString();
+        }
+        return lastKnownLocationStr;
+    }
+
     public void postData() {
         Thread thread = new Thread(new Runnable(){
             @Override
@@ -99,7 +143,7 @@ public class MainActivity extends ActionBarActivity {
 
                         Location lastKnownLocation = locationManager.getLastKnownLocation(locationProvider);
                         String lastKnownLocationStr = "";
-                        if (lastKnownLocation != null){
+                        if (lastKnownLocation != null) {
                             lastKnownLocationStr = lastKnownLocation.toString();
                         }
 
