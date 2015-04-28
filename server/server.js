@@ -29,13 +29,11 @@ var last_reset = new Date();
 // handle post requests of data from arduino
 express_app.use(bodyParser.urlencoded({ extended: false }));
 express_app.post('/data', function(req, res) {
-    console.log(counter+': got post with request body', req.body);
+    console.log('got post with request body', req.body);
     var dict = req.body;
-    if (dict.gps != "null"){
-        if (BROADCAST) {
-            socketio_server.emit('gps', dict.gps);
-        }
-        fs.appendFile('server/gps.txt', (new Date().getTime())+','+dict.gps+','+dict.approach+'\n', function(err) {
+    if (dict.lat != "null"){
+        socketio_server.emit('gps', dict.gps);
+        fs.appendFile('server/gps.txt', (new Date().getTime())+','+dict.lat+','+dict.long+','+dict.approach+'\n', function(err) {
             if (err) throw err;
             console.log('appended to gps.txt');
         });  

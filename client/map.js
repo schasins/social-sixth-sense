@@ -5,7 +5,7 @@ function initialize() {
   var mapOptions = {
     zoom: 24,
     center: myLatlng,
-    styles: [{"stylers":[{"hue":"#00ffaa"},{"gamma":0.4}]}]
+    styles: [{"stylers":[{"hue":"white"},{"gamma":0.4}]}]
   }
   var div = document.getElementById('map-canvas');
   var $div = $(div);
