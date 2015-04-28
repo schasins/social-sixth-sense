@@ -145,16 +145,19 @@ public class MainActivity extends ActionBarActivity {
                             long timestamp = calendar.getTimeInMillis();
 
                             Location lastKnownLocation = locationManager.getLastKnownLocation(locationProvider);
-                            String lastKnownLocationStr = "";
-                            if (lastKnownLocation != null) {
-                                lastKnownLocationStr = lastKnownLocation.toString();
+                            String lat = "";
+                            String lon = "";
+                            if (lastKnownLocation != null){
+                                lat = String.valueOf(lastKnownLocation.getLatitude());
+                                lon = String.valueOf(lastKnownLocation.getLongitude());
                             }
 
                             // Add your data
                             List<NameValuePair> nameValuePairs = new ArrayList<NameValuePair>(2);
-                            nameValuePairs.add(new BasicNameValuePair("approach", approachString));
+                            nameValuePairs.add(new BasicNameValuePair("approach", ".5"));
                             nameValuePairs.add(new BasicNameValuePair("time", String.valueOf(timestamp)));
-                            nameValuePairs.add(new BasicNameValuePair("gps", locationString));
+                            nameValuePairs.add(new BasicNameValuePair("lat", lat));
+                            nameValuePairs.add(new BasicNameValuePair("long", lon));
                             httppost.setEntity(new UrlEncodedFormEntity(nameValuePairs));
 
                             // Execute HTTP Post Request
