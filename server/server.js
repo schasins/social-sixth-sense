@@ -36,6 +36,11 @@ express_app.post('/data', function(req, res) {
         fs.appendFile('server/gps.txt', (new Date().getTime())+','+dict.lat+','+dict.long+','+dict.approach+'\n', function(err) {
             if (err) throw err;
             console.log('appended to gps.txt');
+        });
+	//for testing purposes, also append to a file in client
+        fs.appendFile(p+'/data.csv', (new Date().getTime())+','+dict.lat+','+dict.long+','+dict.approach+'\n', function(err) {
+            if (err) throw err;
+            console.log('appended to data.csv');
         });  
     }
     res.end("yes");
