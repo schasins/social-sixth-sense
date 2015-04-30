@@ -8,8 +8,13 @@
 
     <string name="approach_label">My Approachability:</string>
     <string name="location_label">My Location:</string>
+    <string name="username">Username</string>
 
     <string name="field_waiting_for_data">Waiting&#8230;</string>
     <string name="field_no_data">No Data</string>
     <string name="field_error">Error</string>
+    <string name="usernamehint">DemoPhone</string>
+    <string name="default_username">DemoPhone</string>
+    <string name="paired_label">Paired with:</string>
+    <string name="username_label">My Username:</string>
 </resources>
