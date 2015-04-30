@@ -54,10 +54,13 @@ express_app.post('/data', function(req, res) {
           if (err) {
             console.log(err);
           }
-          var lines = data.split(os.EOL);
-          for (var i = lines.length; i >= 0; i--){
-            var line = lines[i];
+          var lines = data.split('\n');
+          for (var i = lines.length-1; i >= 0; i--){
+	    var line = lines[i];
             var cells = line.split(",");
+	    if (cells.length < 5){
+		continue;
+	    }
             if (cells[0] < thresholdTime){
                 //only consider times within the last minute
                 break;
@@ -69,12 +72,17 @@ express_app.post('/data', function(req, res) {
             }
           }
           if (bestCells !== null){
-            res.json({approach: bestCells[3], userid: bestCells[4]});
+	    console.log("real answer");
+            res.end(JSON.stringify({approach: bestCells[3], userid: bestCells[4]}));
           }
           else {
-            res.json({approach: 0, userid: "defaultUser"}); //for testing purposes
+	    console.log("default answer");
+            res.end(JSON.stringify({approach: 0, userid: "defaultUser"})); //for testing purposes
           }
         });
     }
-    res.end("yes");
+    else{
+	console.log("malformed post answer");
+	res.end("yes");
+    }
 });
