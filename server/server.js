@@ -58,7 +58,7 @@ express_app.post('/data', function(req, res) {
           for (var i = lines.length-1; i >= 0; i--){
 	    var line = lines[i];
             var cells = line.split(",");
-	    if (cells.length < 5){
+	    if (cells.length < 5 || cells[4] === dict.userid){
 		continue;
 	    }
             if (cells[0] < thresholdTime){
