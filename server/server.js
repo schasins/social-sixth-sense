@@ -33,20 +33,20 @@ express_app.post('/data', function(req, res) {
     console.log('got post with request body', req.body);
     var dict = req.body;
     if (dict.lat != "null"){
-        fs.appendFile('server/gps.txt', (dict.time+','+dict.lat+','+dict.long+','+dict.approach+','+dict.userid+'\n', function(err) {
+        fs.appendFile('server/gps.txt', (dict.time+','+dict.lat+','+dict.long+','+dict.approach+','+dict.userid+'\n'), function(err) {
             if (err) throw err;
             console.log('appended to gps.txt');
         });
 	//for testing purposes, also append to a file in client
-        fs.appendFile(p+'/data.csv', (dict.time+','+dict.lat+','+dict.long+','+dict.approach+','+dict.userid+'\n', function(err) {
+        fs.appendFile(p+'/data.csv', (dict.time+','+dict.lat+','+dict.long+','+dict.approach+','+dict.userid+'\n'), function(err) {
             if (err) throw err;
             console.log('appended to data.csv');
         });  
 
         //send back data that includes the id and aproachability of the nearest neighbor
-        var currTime = new Date().getTime());
+        var currTime = new Date().getTime();
         var thresholdTime = currTime - 60000;
-        var bestDistancesq = 100000000000000000000;
+        var bestDistance = 100000000000000000000;
         var bestCells = null;
         //note that altough writing to and processing a file is sufficient for our prototyping purposes,
         //a more robust implementation should seriously use an actual database
@@ -62,9 +62,9 @@ express_app.post('/data', function(req, res) {
                 //only consider times within the last minute
                 break;
             }
-            var distancesq = (dict.lat-cells[1])**2+(dict.long-cells[2])**2;
-            if (distancesq < bestDistancesq){
-                bestDistancesq = distancesq;
+            var distance = Math.abs(dict.lat-cells[1])+Math.abs(dict.long-cells[2]);
+            if (distance < bestDistance){
+                bestDistance = distance;
                 bestCells = cells;
             }
           }
