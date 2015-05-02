@@ -1,6 +1,10 @@
 var map;
+var individualMap;
 
 function initialize() {
+  $( "#tabs" ).tabs();
+  $("#l1").click(function(){google.maps.event.trigger(map, 'resize');});
+  $("#l3").click(function(){google.maps.event.trigger(individualMap, 'resize');});
   var myLatlng = new google.maps.LatLng(37.8757151,-122.2590485);
   var mapOptions = {
     zoom: 24,
@@ -9,12 +13,13 @@ function initialize() {
   }
   var div = document.getElementById('map-canvas');
   var $div = $(div);
-  $div.css("height", .8*$(window).height());
-  $div.css("width", .8*$(window).width());
-  $div.css("left", .1*$(window).width());
-  $div.css("top", .1*$(window).height());
   map = new google.maps.Map(div, mapOptions);
-  sliderSetup();
+  sliderSetup("");
+
+  div = document.getElementById('map-canvas2');
+  $div = $(div);
+  individualMap = new google.maps.Map(div, mapOptions);
+  sliderSetup("2");
 }
 
 google.maps.event.addDomListener(window, 'load', initialize);
@@ -66,19 +71,16 @@ function update(dataPoints, startTime, endTime){
 
 var timeMin;
 var timeMax;
-function sliderSetup(){
+function sliderSetup(suffix){
 
-    var $slider = $(document.getElementById('slider-range'));
-    var $slider_wrapper = $(document.getElementById('slider-wrapper'));
-    $slider.css("width", .8*$(window).width());
-    $slider_wrapper.css("bottom", .1*$(window).height()-40);
-    $slider.css("left", .1*$(window).width());
+    var $slider = $(document.getElementById('slider-range'+suffix));
+    var $slider_wrapper = $(document.getElementById('slider-wrapper'+suffix));
 
     var times = _.pluck(currentPoints, "time");
     timeMin = Math.min.apply(Math, times);
     timeMax = Math.max.apply(Math, times);
     console.log("timeMin: "+timeMin+" timeMax: "+timeMax);
-    $( "#slider-range" ).slider({
+    $slider.slider({
       range: true,
       min: timeMin,
       max: timeMax,
