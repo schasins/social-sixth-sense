@@ -1,16 +1,23 @@
 package com.schasins.phoneserver;
 
 import android.content.Context;
+import android.hardware.usb.UsbDeviceConnection;
+import android.hardware.usb.UsbManager;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
 import android.support.v7.app.ActionBarActivity;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.TextView;
 import android.widget.Toast;
+
+import com.hoho.android.usbserial.driver.UsbSerialDriver;
+import com.hoho.android.usbserial.driver.UsbSerialPort;
+import com.hoho.android.usbserial.driver.UsbSerialProber;
 
 import org.apache.http.HttpResponse;
 import org.apache.http.NameValuePair;
@@ -21,6 +28,7 @@ import org.apache.http.client.methods.HttpPost;
 import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.http.message.BasicNameValuePair;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.List;
@@ -62,6 +70,38 @@ public class MainActivity extends ActionBarActivity {
                 refreshData();
             }
         });
+    }
+
+    private void readArduinoData() {
+        // Find all available drivers from attached devices.
+        UsbManager manager = (UsbManager) getSystemService(Context.USB_SERVICE);
+        List<UsbSerialDriver> availableDrivers = UsbSerialProber.getDefaultProber().findAllDrivers(manager);
+        if (availableDrivers.isEmpty()) {
+            return;
+        }
+
+        // Open a connection to the first available driver.
+        UsbSerialDriver driver = availableDrivers.get(0);
+        UsbDeviceConnection connection = manager.openDevice(driver.getDevice());
+        if (connection == null) {
+            // You probably need to call UsbManager.requestPermission(driver.getDevice(), ..)
+            return;
+        }
+
+        // Read some data! Most have just one port (port 0).
+        List<UsbSerialPort> ports = driver.getPorts();
+        UsbSerialPort port = ports.get(0); //FIXME: how do we know this is port 0?
+        try {
+            port.open(connection);
+            port.setParameters(115200, UsbSerialPort.DATABITS_8, UsbSerialPort.STOPBITS_1,
+                                UsbSerialPort.PARITY_NONE); //FIXME: how to pick args 2, 3, 4?
+            byte buffer[] = new byte[16];
+            int numBytesRead = port.read(buffer, 1000);
+            Log.d("Main Activity", "Read " + numBytesRead + " bytes.");
+            port.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
     private LocationManager setUpLocationManager(){
@@ -114,6 +154,7 @@ public class MainActivity extends ActionBarActivity {
 
     private void calculateApproachString() {
         //TODO: get value from Arduino
+        readArduinoData();
         approachString = "0.5";
     }
 
@@ -171,16 +212,10 @@ public class MainActivity extends ActionBarActivity {
                         e.printStackTrace();
                         httpError = true;
                     } finally {
-                        findViewById(R.id.root_activity).post(new Runnable() {
-                            @Override
-                            public void run() {
-                                if (httpError) {
-                                    showToast(getString(R.string.field_error));
-                                } else {
-                                    showToast("" + httpResponse.getStatusLine().getStatusCode());
-                                }
-                            }
-                        });
+                        if (httpError)
+                            showToast(getString(R.string.field_error));
+                        else
+                            showToast("" + httpResponse);
                     }
                 }
             }
@@ -188,12 +223,19 @@ public class MainActivity extends ActionBarActivity {
         thread.start();
     }
 
-    /* Must be run on UI thread */
-    private void showToast(CharSequence text) {
-        if (text != null) {
-            Context context = getApplicationContext();
-            int duration = Toast.LENGTH_LONG;
-            Toast.makeText(context, text, duration).show();
-        }
+    /* Runs a toast containing _TEXT on the UI thread. */
+    private void showToast(CharSequence _text) {
+        final String text = "" + _text;
+        findViewById(R.id.root_activity).post(new Runnable() {
+            @Override
+            public void run() {
+                if (text.isEmpty()) {
+                    Context context = getApplicationContext();
+                    int duration = Toast.LENGTH_LONG;
+                    Toast.makeText(context, text, duration).show();
+                }
+            }
+        });
     }
+
 }
