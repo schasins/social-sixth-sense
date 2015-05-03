@@ -29,7 +29,9 @@ import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.http.message.BasicNameValuePair;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Calendar;
 import java.util.List;
 import java.util.TimeZone;
@@ -45,6 +47,9 @@ public class MainActivity extends ActionBarActivity {
 
     private HttpResponse httpResponse;
     private boolean httpError = false;
+
+    private byte buffer[] = new byte[4];
+    private float arduinoValue = 0.0f;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -73,20 +78,25 @@ public class MainActivity extends ActionBarActivity {
     }
 
     private void readArduinoData() {
+//        postToUI("BEGIN: readArduinoData...");
         // Find all available drivers from attached devices.
         UsbManager manager = (UsbManager) getSystemService(Context.USB_SERVICE);
         List<UsbSerialDriver> availableDrivers = UsbSerialProber.getDefaultProber().findAllDrivers(manager);
         if (availableDrivers.isEmpty()) {
+            postToUI("ERROR: Found no drivers for Arduino.");
             return;
         }
+//        postToUI("Found drivers...");
 
         // Open a connection to the first available driver.
         UsbSerialDriver driver = availableDrivers.get(0);
         UsbDeviceConnection connection = manager.openDevice(driver.getDevice());
         if (connection == null) {
             // You probably need to call UsbManager.requestPermission(driver.getDevice(), ..)
+            postToUI("ERROR: could not connect to Arduino.");
             return;
         }
+//        postToUI("Found connection...");
 
         // Read some data! Most have just one port (port 0).
         List<UsbSerialPort> ports = driver.getPorts();
@@ -95,9 +105,12 @@ public class MainActivity extends ActionBarActivity {
             port.open(connection);
             port.setParameters(115200, UsbSerialPort.DATABITS_8, UsbSerialPort.STOPBITS_1,
                                 UsbSerialPort.PARITY_NONE); //FIXME: how to pick args 2, 3, 4?
-            byte buffer[] = new byte[16];
+
             int numBytesRead = port.read(buffer, 1000);
+            int value = ByteBuffer.wrap(buffer).getInt(0);
             Log.d("Main Activity", "Read " + numBytesRead + " bytes.");
+//            postToUI("Read " + numBytesRead + " bytes.");
+            postToUI("Value: " + Arrays.toString(buffer));
             port.close();
         } catch (IOException e) {
             e.printStackTrace();
@@ -162,8 +175,9 @@ public class MainActivity extends ActionBarActivity {
         Location lastKnownLocation = locationManager.getLastKnownLocation(locationProvider);
         String lastKnownLocationStr = "";
         if (lastKnownLocation != null) {
-            lastKnownLocationStr = lastKnownLocation.toString();
-            locationString = lastKnownLocationStr;
+            String lat = String.valueOf(lastKnownLocation.getLatitude());
+            String lon = String.valueOf(lastKnownLocation.getLongitude());
+            locationString = "(" + lat + ", " + lon + ")";
         } else {
             locationString = getString(R.string.field_error);
         }
@@ -212,10 +226,16 @@ public class MainActivity extends ActionBarActivity {
                         e.printStackTrace();
                         httpError = true;
                     } finally {
-                        if (httpError)
-                            showToast(getString(R.string.field_error));
-                        else
-                            showToast("" + httpResponse);
+                        findViewById(R.id.root_activity).post(new Runnable() {
+                            @Override
+                            public void run() {
+                                if (httpError) {
+                                    showToast(getString(R.string.field_error));
+                                } else {
+                                    showToast("" + httpResponse.getStatusLine().getStatusCode());
+                                }
+                            }
+                        });
                     }
                 }
             }
@@ -223,19 +243,22 @@ public class MainActivity extends ActionBarActivity {
         thread.start();
     }
 
-    /* Runs a toast containing _TEXT on the UI thread. */
-    private void showToast(CharSequence _text) {
+    private void postToUI(CharSequence _text) {
         final String text = "" + _text;
         findViewById(R.id.root_activity).post(new Runnable() {
             @Override
             public void run() {
-                if (text.isEmpty()) {
-                    Context context = getApplicationContext();
-                    int duration = Toast.LENGTH_LONG;
-                    Toast.makeText(context, text, duration).show();
-                }
+                showToast(text);
             }
         });
     }
 
+    /* Must be run on UI thread */
+    private void showToast(CharSequence text) {
+        if (text != null) {
+            Context context = getApplicationContext();
+            int duration = Toast.LENGTH_SHORT;
+            Toast.makeText(context, text, duration).show();
+        }
+    }
 }
