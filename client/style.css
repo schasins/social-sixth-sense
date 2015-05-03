@@ -1,5 +1,44 @@
+body{
+	font-family: 'Oswald', sans-serif;
+}
+
 #slider-wrapper{
 }
 
 #tabs-1, #tabs-2, #tabs-3{
+}
+
+text {
+	  font-family: 'Oswald', sans-serif;
+    font-size: 10px;
+}
+
+text.nv-axislabel {
+	font-size: 14px;
+}
+
+.ui-widget{
+	  font-family: 'Oswald', sans-serif;
+}
+
+.ui-widget {
+	  font-family: 'Oswald', sans-serif;
+}
+.ui-widget .ui-widget {
+	  font-family: 'Oswald', sans-serif;
+}
+.ui-widget input, .ui-widget select, .ui-widget textarea, .ui-widget button {
+	  font-family: 'Oswald', sans-serif;
+}
+.ui-widget-content {
+	  font-family: 'Oswald', sans-serif;
+}
+.ui-widget-content a {
+	  font-family: 'Oswald', sans-serif;
+}
+.ui-widget-header {
+	  font-family: 'Oswald', sans-serif;
+}
+.ui-widget-header a {
+	  font-family: 'Oswald', sans-serif;
 }

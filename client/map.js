@@ -1,4 +1,5 @@
 var maps = [];
+var chart;
 
 function initialize() {
   $( "#tabs" ).tabs();
@@ -31,6 +32,65 @@ function initialize() {
       sliderSetup("2",1,currentIndividualPoints);
     }
 }, false);
+
+  document.getElementById("choose-id-line-chart").addEventListener("keydown", function(e) {
+    if (!e) { var e = window.event; }
+
+    // Enter is pressed
+    if (e.keyCode == 13) {
+      currentIndividualPointsLineChart = filterById(allPoints,e.target.value);
+
+      var myData = process(currentIndividualPointsLineChart);   //You need data...
+
+      d3.select('#chart')    //Select the <svg> element you want to render the chart in.   
+          .datum(myData)         //Populate the <svg> element with chart data...
+          .call(chart);          //Finally, render the chart!
+        }
+}, false);
+
+nv.addGraph(function() {
+  chart = nv.models.lineChart()
+                .margin({left: 100, bottom:100})  //Adjust chart margins to give the x-axis some breathing room.
+                .useInteractiveGuideline(true)  //We want nice looking tooltips and a guideline!
+                .transitionDuration(350)  //how fast do you want the lines to transition?
+                .showLegend(false)       //Show the legend, allowing users to turn on/off line series.
+                .showYAxis(true)        //Show the y-axis
+                .showXAxis(true)        //Show the x-axis
+                .forceY([0,1])
+  ;
+
+  chart.xAxis     //Chart x-axis settings
+      .axisLabel('Time')
+      .tickFormat(function(d) {
+        return d3.time.format('%I:%M')(new Date(d))});
+
+  chart.yAxis     //Chart y-axis settings
+      .axisLabel('Approachability')
+      .tickFormat(d3.format('.02f'));
+
+  /* Done setting the chart up? Time to render it!*/
+  var myData = process(currentIndividualPointsLineChart);   //You need data...
+  console.log(myData);
+
+  d3.select('#chart')    //Select the <svg> element you want to render the chart in.   
+      .datum(myData)         //Populate the <svg> element with chart data...
+      .call(chart);          //Finally, render the chart!
+
+  return chart;
+});
+
+}
+
+function process(points){
+  var approachability = _.map(points, function(point){return {x:point.time,y:point.approach};});
+  return [
+    {
+      values: approachability,      //values - represents the array of {x,y} data points
+      key: 'Approachability', //key  - the name of the series.
+      color: '#ff7f0e',  //color - optional: choose your own line color.
+      area: false
+    }
+    ];
 }
 
 google.maps.event.addDomListener(window, 'load', initialize);
@@ -145,3 +205,4 @@ var testPoints = JSON.parse(testStr);
 var allPoints = testPoints;
 var currentPoints = testPoints;
 var currentIndividualPoints = filterById(testPoints,"sarah");
+var currentIndividualPointsLineChart = currentIndividualPoints;
