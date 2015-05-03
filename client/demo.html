@@ -1,0 +1,30 @@
+<html>
+<head>
+<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.11.2/jquery.min.js"></script>
+<script src="jquery.knob.js"></script>
+<script>
+    $(function() {
+        $(".dial").knob({
+    'min':-100,
+    'max':100,
+    'lineCap':'round',
+    'cursor':true,
+    'thickness':.2,
+    'angleOffset':0,
+    'release' : function (v) {
+    console.log(v);
+    var params = {time:new Date().getTime(),lat:37.8757151,long:-122.2590485,approach:(v+100)/200,userid:"demoApp"};
+    console.log(params);
+    $.ajax({
+     url: "http://kaopad.cs.berkeley.edu:1234/data",
+     type: "POST",
+     data: params});
+}
+});
+    });
+</script>
+</head>
+<body>
+<input type="text" value="75" class="dial">
+</body>
+</html>

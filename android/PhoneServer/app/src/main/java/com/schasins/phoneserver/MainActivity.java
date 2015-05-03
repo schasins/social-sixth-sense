@@ -12,6 +12,7 @@ import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -19,14 +20,18 @@ import com.hoho.android.usbserial.driver.UsbSerialDriver;
 import com.hoho.android.usbserial.driver.UsbSerialPort;
 import com.hoho.android.usbserial.driver.UsbSerialProber;
 
+import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
 import org.apache.http.NameValuePair;
 import org.apache.http.client.ClientProtocolException;
 import org.apache.http.client.HttpClient;
+import org.apache.http.client.ResponseHandler;
 import org.apache.http.client.entity.UrlEncodedFormEntity;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.http.message.BasicNameValuePair;
+import org.apache.http.util.EntityUtils;
+import org.json.JSONObject;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -46,10 +51,12 @@ public class MainActivity extends ActionBarActivity {
     private String locationString;
 
     private HttpResponse httpResponse;
+
     private boolean httpError = false;
 
     private byte buffer[] = new byte[4];
     private float arduinoValue = 0.0f;
+    private EditText username;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -60,6 +67,8 @@ public class MainActivity extends ActionBarActivity {
         // Or use LocationManager.GPS_PROVIDER
         locationManager = setUpLocationManager();
         setupUI();
+
+        username = (EditText)findViewById(R.id.username);
     }
 
     private void setupUI() {
@@ -207,16 +216,40 @@ public class MainActivity extends ActionBarActivity {
                                 lon = String.valueOf(lastKnownLocation.getLongitude());
                             }
 
+                            String userid =  username.getText().toString();
+
                             // Add your data
                             List<NameValuePair> nameValuePairs = new ArrayList<NameValuePair>(2);
                             nameValuePairs.add(new BasicNameValuePair("approach", ".5"));
                             nameValuePairs.add(new BasicNameValuePair("time", String.valueOf(timestamp)));
                             nameValuePairs.add(new BasicNameValuePair("lat", lat));
                             nameValuePairs.add(new BasicNameValuePair("long", lon));
+                            nameValuePairs.add(new BasicNameValuePair("userid", userid));
                             httppost.setEntity(new UrlEncodedFormEntity(nameValuePairs));
 
+                            // Create a custom response handler
+                            ResponseHandler<String> responseHandler = new ResponseHandler<String>() {
+
+                                public String handleResponse(final HttpResponse response) throws ClientProtocolException, IOException {
+                                    httpResponse = response;
+                                    int status = response.getStatusLine().getStatusCode();
+                                    if (status >= 200 && status < 300) {
+                                        HttpEntity entity = response.getEntity();
+                                        return entity != null ? EntityUtils.toString(entity) : null;
+                                    } else {
+                                        throw new ClientProtocolException("Unexpected response status: " + status);
+                                    }
+                                }
+
+                            };
+
                             // Execute HTTP Post Request
-                            httpResponse = httpclient.execute(httppost);
+                            String responseString = httpclient.execute(httppost,responseHandler);
+                            JSONObject jObject = new JSONObject(responseString);
+                            long approach = jObject.getLong("approach");
+                            String uid = jObject.getString("userid");
+                            System.out.println(approach);
+                            ((TextView) findViewById(R.id.paired_field)).setText(uid);
 
                         } catch (ClientProtocolException e) {
                             // TODO Auto-generated catch block
