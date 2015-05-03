@@ -20,7 +20,7 @@ var express_server = express_app.listen(1234);
 var socketio_server = socketio.listen(express_server);
 socketio_server.on('connect', function(socket) {
     console.log('client connected');
-    socketio_server.emit('data', test_data_arrays);
+    //socketio_server.emit('data', test_data_arrays);
     socket.on('disconnect', function() {
         console.log('client disconnected');
     });
@@ -33,6 +33,11 @@ express_app.post('/data', function(req, res) {
     console.log('got post with request body', req.body);
     var dict = req.body;
     if (dict.lat != "null"){
+	dict.time = parseInt(dict.time);
+	dict.lat = parseFloat(dict.lat);
+	dict.long = parseFloat(dict.long);
+	dict.approach = parseFloat(dict.approach);
+	socketio_server.emit('newreading', dict);
         fs.appendFile('server/gps.txt', (dict.time+','+dict.lat+','+dict.long+','+dict.approach+','+dict.userid+'\n'), function(err) {
             if (err) throw err;
             console.log('appended to gps.txt');
@@ -45,7 +50,7 @@ express_app.post('/data', function(req, res) {
 
         //send back data that includes the id and aproachability of the nearest neighbor
         var currTime = new Date().getTime();
-        var thresholdTime = currTime - 60000;
+        var thresholdTime = currTime - 600000;
         var bestDistance = 100000000000000000000;
         var bestCells = null;
         //note that altough writing to and processing a file is sufficient for our prototyping purposes,

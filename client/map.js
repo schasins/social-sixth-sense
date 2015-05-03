@@ -1,7 +1,21 @@
 var maps = [];
 var chart;
+var individuals = ["sarah","sarah"];
 
 function initialize() {
+
+  var socket = io.connect('http://kaopad.cs.berkeley.edu:1234'); //TODO: choose server location
+    socket.on('newreading', function(d) {
+	allPoints.push(d);
+	if (d.userid === individuals[0]){
+	    refreshIndividualChart(d.userid);
+	}
+	if (d.userid === individuals[1]){
+	    refreshIndividualMap(d.userid);
+	}
+        //console.log(d);
+    });
+
   $( "#tabs" ).tabs();
   $("#l1").click(function(){google.maps.event.trigger(maps[0], 'resize');});
   $("#l3").click(function(){google.maps.event.trigger(maps[1], 'resize');});
@@ -27,9 +41,8 @@ function initialize() {
 
     // Enter is pressed
     if (e.keyCode == 13) {
-      currentIndividualPoints = filterById(allPoints,e.target.value);
-      var times = _.pluck(currentIndividualPoints, "time");
-      sliderSetup("2",1,currentIndividualPoints);
+      individuals[1]=e.target.value;
+      refreshIndividualMap(e.target.value);
     }
 }, false);
 
@@ -38,13 +51,8 @@ function initialize() {
 
     // Enter is pressed
     if (e.keyCode == 13) {
-      currentIndividualPointsLineChart = filterById(allPoints,e.target.value);
-
-      var myData = process(currentIndividualPointsLineChart);   //You need data...
-
-      d3.select('#chart')    //Select the <svg> element you want to render the chart in.   
-          .datum(myData)         //Populate the <svg> element with chart data...
-          .call(chart);          //Finally, render the chart!
+      individuals[0]=e.target.value;
+      refreshIndividualChart(e.target.value);
         }
 }, false);
 
@@ -79,6 +87,21 @@ nv.addGraph(function() {
   return chart;
 });
 
+}
+
+function refreshIndividualChart(id){
+      currentIndividualPointsLineChart = filterById(allPoints,id);
+      var myData = process(currentIndividualPointsLineChart);   //You need data...
+
+      d3.select('#chart')    //Select the <svg> element you want to render the chart in.   
+          .datum(myData)         //Populate the <svg> element with chart data...
+          .call(chart);          //Finally, render the chart!
+}
+
+function refreshIndividualMap(id){
+      currentIndividualPoints = filterById(allPoints,id);
+      var times = _.pluck(currentIndividualPoints, "time");
+      sliderSetup("2",1,currentIndividualPoints);
 }
 
 function process(points){
