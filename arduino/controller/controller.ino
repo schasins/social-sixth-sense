@@ -17,10 +17,11 @@
 #define THERM_HI 225
 #define THERM_MAX 255
 
-#define TEMP_POLL_INTERVAL 5000
+#define KNOB_POLL_INTERVAL 5000
+#define SERVER_POLL_INTERVAL 5000
 
 /* Pin setup */
-const int enablePin = 6; //changed from 11
+int enablePin = 6; //changed from 11
 const int in1Pin = 5; //changed from 10
 const int in2Pin = 4; //changed from 9
 const int switchPin = 7;
@@ -44,9 +45,10 @@ aci_evt_opcode_t status = ACI_EVT_DISCONNECTED;
 // void actuateMotor(void);
 
 /* Variables */
-int val = THERM_MIN;
-int knob;
+int knobVal = THERM_MIN;
+int serverVal = 0;
 unsigned long lastTempCheck = millis();
+unsigned long lastServerCheck = millis();
 
 void setup()
 {
@@ -66,20 +68,27 @@ void setup()
 void loop()
 {
   pollBluetoothStatus();
-  if (status == ACI_EVT_CONNECTED) {
-    tryReadValue();
-    // tryWriteValue();
+  if (status == !ACI_EVT_CONNECTED) {
+    return;
   }
 
-  knob = analogRead(potPin);
   // Serial.println(knob);
-
-  actuateMotor();
   
-  if (millis() - lastTempCheck >= TEMP_POLL_INTERVAL) {
+  if (millis() - lastTempCheck >= KNOB_POLL_INTERVAL) {
     pollKnob();
-    tryWriteValue(val);
+    tryWriteValue(knobVal);
     lastTempCheck = millis();
+  }
+
+  if (millis() - lastServerCheck >= SERVER_POLL_INTERVAL) {
+    tryReadValue();
+    bool isHot = serverVal > 0 ? true : false;
+    actuateMotor();
+    Serial.print("Setting thermo to: ");
+    Serial.println(serverVal);
+    analogWrite(enablePin, serverVal);
+    setDirectionHot(isHot);
+    lastServerCheck = millis();
   }
   
 }
@@ -113,11 +122,18 @@ void tryReadValue(void) {
   if (BTLEserial.available()) {
     Serial.print("* "); Serial.print(BTLEserial.available()); Serial.println(F(" bytes available from BTLE"));
   }
+
+  char buf[32];
+  int i = 0;
   // OK while we still have something to read, get a character and print it out
   while (BTLEserial.available()) {
     char c = BTLEserial.read();
+    buf[i++] = c;
     Serial.print(c);
-  } 
+  }
+  serverVal = atoi(buf);
+  Serial.print("\nGot serverVal: ");
+  Serial.println(serverVal);
 }
 
 void tryWriteValue(int val) {
@@ -156,26 +172,25 @@ void tryWriteValue(int val) {
 }
 
 void pollKnob(void) {
-  /* Hot scenario */
-  if (knob > POT_MID) {
-    val = map(knob, POT_MID, POT_MAX, THERM_MIN, THERM_HI);
-    analogWrite(enablePin, val);
-    setDirectionHot(true);
-    Serial.print("Writing to thermo: ");
-    Serial.println(val);
-    delay(5000);
-    analogWrite(enablePin, LOW);
+  int rawKnobVal = analogRead(potPin);
+  /* Hot scenario (positive) */
+  if (rawKnobVal > POT_MID) {
+    knobVal = map(rawKnobVal, POT_MID, POT_MAX, THERM_MIN, THERM_HI);
+    // analogWrite(enablePin, knobVal);
+    // setDirectionHot(true);
+    Serial.print("Read from knob: ");
+    Serial.println(knobVal);
+    // analogWrite(enablePin, LOW);
   }
   
-  /* Cold scenario */
-  if (knob <= POT_MID){
-    val = map(knob, POT_MIN, POT_MID, THERM_MAX, THERM_MIN);
-    analogWrite(enablePin, val);
-    setDirectionHot(false);
-    Serial.print("Writing to thermo: ");
-    Serial.println(val);
-    delay(5000);
-    analogWrite(enablePin, LOW);
+  /* Cold scenario (negative) */
+  if (rawKnobVal <= POT_MID){
+    knobVal = map(rawKnobVal, POT_MIN, POT_MID, THERM_MAX, THERM_MIN);
+    // analogWrite(enablePin, knobVal);
+    // setDirectionHot(false);
+    Serial.print("Read from int knob: ");
+    Serial.println(knobVal);
+    // analogWrite(enablePin, LOW);
   }
 }
 
