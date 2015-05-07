@@ -1,17 +1,29 @@
 package com.schasins.phoneserver;
 
+import android.bluetooth.BluetoothAdapter;
+import android.bluetooth.BluetoothDevice;
+import android.bluetooth.BluetoothManager;
 import android.content.Context;
+import android.content.Intent;
+import android.hardware.usb.UsbDeviceConnection;
+import android.hardware.usb.UsbManager;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
+import android.os.Handler;
 import android.support.v7.app.ActionBarActivity;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
+
+import com.hoho.android.usbserial.driver.UsbSerialDriver;
+import com.hoho.android.usbserial.driver.UsbSerialPort;
+import com.hoho.android.usbserial.driver.UsbSerialProber;
 
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
@@ -27,7 +39,9 @@ import org.apache.http.util.EntityUtils;
 import org.json.JSONObject;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Calendar;
 import java.util.List;
 import java.util.TimeZone;
@@ -45,7 +59,34 @@ public class MainActivity extends ActionBarActivity {
 
     private boolean httpError = false;
 
+    private byte buffer[] = new byte[4];
+    private float arduinoValue = 0.0f;
     private EditText username;
+
+//    /* Bluetooth stuff */
+//    private final static int REQUEST_ENABLE_BT = 1;
+//    private static final long SCAN_PERIOD = 10000;
+//
+//    private BluetoothAdapter mBluetoothAdapter;
+//    private LeDeviceListAdapter mLeDeviceListAdapter;
+//    private boolean mScanning;
+//    private Handler mHandler;
+//
+//    // Device scan callback.
+//    private BluetoothAdapter.LeScanCallback mLeScanCallback =
+//            new BluetoothAdapter.LeScanCallback() {
+//                @Override
+//                public void onLeScan(final BluetoothDevice device, int rssi,
+//                                     byte[] scanRecord) {
+//                    runOnUiThread(new Runnable() {
+//                        @Override
+//                        public void run() {
+//                            mLeDeviceListAdapter.addDevice(device);
+//                            mLeDeviceListAdapter.notifyDataSetChanged();
+//                        }
+//                    });
+//                }
+//            };
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -64,7 +105,7 @@ public class MainActivity extends ActionBarActivity {
         findViewById(R.id.send_btn).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                postData();
+                postData(0);
             }
         });
         findViewById(R.id.refresh_btn).setOnClickListener(new View.OnClickListener() {
@@ -73,6 +114,46 @@ public class MainActivity extends ActionBarActivity {
                 refreshData();
             }
         });
+    }
+
+    private void readArduinoData() {
+//        postToUI("BEGIN: readArduinoData...");
+        // Find all available drivers from attached devices.
+        UsbManager manager = (UsbManager) getSystemService(Context.USB_SERVICE);
+        List<UsbSerialDriver> availableDrivers = UsbSerialProber.getDefaultProber().findAllDrivers(manager);
+        if (availableDrivers.isEmpty()) {
+            postToUI("ERROR: Found no drivers for Arduino.");
+            return;
+        }
+//        postToUI("Found drivers...");
+
+        // Open a connection to the first available driver.
+        UsbSerialDriver driver = availableDrivers.get(0);
+        UsbDeviceConnection connection = manager.openDevice(driver.getDevice());
+        if (connection == null) {
+            // You probably need to call UsbManager.requestPermission(driver.getDevice(), ..)
+            postToUI("ERROR: could not connect to Arduino.");
+            return;
+        }
+//        postToUI("Found connection...");
+
+        // Read some data! Most have just one port (port 0).
+        List<UsbSerialPort> ports = driver.getPorts();
+        UsbSerialPort port = ports.get(0); //FIXME: how do we know this is port 0?
+        try {
+            port.open(connection);
+            port.setParameters(115200, UsbSerialPort.DATABITS_8, UsbSerialPort.STOPBITS_1,
+                                UsbSerialPort.PARITY_NONE); //FIXME: how to pick args 2, 3, 4?
+
+            int numBytesRead = port.read(buffer, 1000);
+            int value = ByteBuffer.wrap(buffer).getInt(0);
+            Log.d("Main Activity", "Read " + numBytesRead + " bytes.");
+//            postToUI("Read " + numBytesRead + " bytes.");
+            postToUI("Value: " + Arrays.toString(buffer));
+            port.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
     private LocationManager setUpLocationManager(){
@@ -125,6 +206,7 @@ public class MainActivity extends ActionBarActivity {
 
     private void calculateApproachString() {
         //TODO: get value from Arduino
+        readArduinoData();
         approachString = "0.5";
     }
 
@@ -132,15 +214,17 @@ public class MainActivity extends ActionBarActivity {
         Location lastKnownLocation = locationManager.getLastKnownLocation(locationProvider);
         String lastKnownLocationStr = "";
         if (lastKnownLocation != null) {
-            lastKnownLocationStr = lastKnownLocation.toString();
-            locationString = lastKnownLocationStr;
+            String lat = String.valueOf(lastKnownLocation.getLatitude());
+            String lon = String.valueOf(lastKnownLocation.getLongitude());
+            locationString = "(" + lat + ", " + lon + ")";
         } else {
             locationString = getString(R.string.field_error);
         }
     }
 
-    public void postData() {
+    public void postData(int _value) {
         httpError = false;
+        final int value = _value;
         Thread thread = new Thread(new Runnable(){
             @Override
             public void run() {
@@ -167,7 +251,7 @@ public class MainActivity extends ActionBarActivity {
 
                             // Add your data
                             List<NameValuePair> nameValuePairs = new ArrayList<NameValuePair>(2);
-                            nameValuePairs.add(new BasicNameValuePair("approach", ".5"));
+                            nameValuePairs.add(new BasicNameValuePair("approach", ""+ value));
                             nameValuePairs.add(new BasicNameValuePair("time", String.valueOf(timestamp)));
                             nameValuePairs.add(new BasicNameValuePair("lat", lat));
                             nameValuePairs.add(new BasicNameValuePair("long", lon));
@@ -223,12 +307,53 @@ public class MainActivity extends ActionBarActivity {
         thread.start();
     }
 
+    private void postToUI(CharSequence _text) {
+        final String text = "" + _text;
+        findViewById(R.id.root_activity).post(new Runnable() {
+            @Override
+            public void run() {
+                showToast(text);
+            }
+        });
+    }
+
     /* Must be run on UI thread */
     private void showToast(CharSequence text) {
         if (text != null) {
             Context context = getApplicationContext();
-            int duration = Toast.LENGTH_LONG;
+            int duration = Toast.LENGTH_SHORT;
             Toast.makeText(context, text, duration).show();
         }
     }
+
+//    private void initBlueTooth() {
+//        // Initializes Bluetooth adapter.
+//        final BluetoothManager bluetoothManager =
+//                (BluetoothManager) getSystemService(Context.BLUETOOTH_SERVICE);
+//        mBluetoothAdapter = bluetoothManager.getAdapter();
+//        if (mBluetoothAdapter == null || !mBluetoothAdapter.isEnabled()) {
+//            Intent enableBtIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
+//            startActivityForResult(enableBtIntent, REQUEST_ENABLE_BT);
+//        }
+//    }
+//
+//    private void scanLeDevice(final boolean enable) {
+//        if (enable) {
+//            // Stops scanning after a pre-defined scan period.
+//            mHandler.postDelayed(new Runnable() {
+//                @Override
+//                public void run() {
+//                    mScanning = false;
+//                    mBluetoothAdapter.stopLeScan(mLeScanCallback);
+//                }
+//            }, SCAN_PERIOD);
+//
+//            mScanning = true;
+//            mBluetoothAdapter.startLeScan(mLeScanCallback);
+//        } else {
+//            mScanning = false;
+//            mBluetoothAdapter.stopLeScan(mLeScanCallback);
+//        }
+//    }
+
 }
