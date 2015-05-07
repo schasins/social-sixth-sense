@@ -13,6 +13,22 @@
     'angleOffset':0,
     'release' : function (v) {
     console.log(v);
+    if (v > 0){
+ $('.dial').trigger(
+     'configure',
+      {
+        "fgColor":"#FF8080"
+    }
+);
+}
+else{
+ $('.dial').trigger(
+     'configure',
+      {
+        "fgColor":"#C2D6FF"
+    }
+);
+}
     var params = {time:new Date().getTime(),lat:37.8757151,long:-122.2590485,approach:(v+100)/200,userid:"demoApp"};
     console.log(params);
     $.ajax({
