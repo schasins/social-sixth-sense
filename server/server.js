@@ -53,6 +53,7 @@ express_app.post('/data', function(req, res) {
         var thresholdTime = currTime - 600000;
         var bestDistance = 100000000000000000000;
         var bestCells = null;
+	var idsSoFar = [];
         //note that altough writing to and processing a file is sufficient for our prototyping purposes,
         //a more robust implementation should seriously use an actual database
         fs.readFile('server/gps.txt', 'utf8', function (err,data) {
@@ -70,6 +71,10 @@ express_app.post('/data', function(req, res) {
                 //only consider times within the last minute
                 break;
             }
+	    if (idsSoFar.indexOf(cells[4]) > -1){
+		continue; //only consider the most recent location of any usr
+	    }
+	    idsSoFar.push(cells[4]);
             var distance = Math.abs(dict.lat-cells[1])+Math.abs(dict.long-cells[2]);
             if (distance < bestDistance){
                 bestDistance = distance;
