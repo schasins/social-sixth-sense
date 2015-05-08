@@ -11,6 +11,7 @@
     'cursor':true,
     'thickness':.2,
     'angleOffset':0,
+    'height':600,
     'release' : function (v) {
     console.log(v);
     if (v > 0){
@@ -29,7 +30,7 @@ else{
     }
 );
 }
-    var params = {time:new Date().getTime(),lat:37.8757151,long:-122.2590485,approach:(v+100)/200,userid:"demoApp"};
+    var params = {time:new Date().getTime(),lat:37.8757151,long:-122.2590485,approach:v/100,userid:"demoApp"};
     console.log(params);
     $.ajax({
      url: "http://kaopad.cs.berkeley.edu:1234/data",
