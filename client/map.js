@@ -4,7 +4,7 @@ var individuals = ["sarah","sarah"];
 
 function initialize() {
 
-  var socket = io.connect('http://kaopad.cs.berkeley.edu:1234'); //TODO: choose server location
+  var socket = io.connect('<serverloc>'); //TODO: choose server location
     socket.on('newreading', function(d) {
 	allPoints.push(d);
 	if (d.userid === individuals[0]){

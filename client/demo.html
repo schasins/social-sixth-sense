@@ -33,7 +33,7 @@ else{
     var params = {time:new Date().getTime(),lat:37.8757151,long:-122.2590485,approach:v/100,userid:"demoApp"};
     console.log(params);
     $.ajax({
-     url: "http://kaopad.cs.berkeley.edu:1234/data",
+     url: "<serverloc>/data", //TODO: choose server location
      type: "POST",
      data: params});
 }

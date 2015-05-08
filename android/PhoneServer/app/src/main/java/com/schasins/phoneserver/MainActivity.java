@@ -234,7 +234,7 @@ public class MainActivity extends ActionBarActivity {
                             notify();
                             // Create a new HttpClient and Post Header
                             HttpClient httpclient = new DefaultHttpClient();
-                            HttpPost httppost = new HttpPost("http://kaopad.cs.berkeley.edu:1234/data");
+                            HttpPost httppost = new HttpPost("<serverloc>/data"); //TODO: choose server location
 
                             Calendar calendar = Calendar.getInstance(TimeZone.getTimeZone("UTC"));
                             long timestamp = calendar.getTimeInMillis();
